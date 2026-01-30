@@ -28,7 +28,18 @@ async function getHomePageData() {
 }
 
 export default async function HomePage() {
-    const { slides, initiatives, impactStats, partners } = await getHomePageData();
+    let slides = [], initiatives = [], impactStats = [], partners = [];
+
+    try {
+        const data = await getHomePageData();
+        slides = data.slides || [];
+        initiatives = data.initiatives || [];
+        impactStats = data.impactStats || [];
+        partners = data.partners || [];
+    } catch (error) {
+        console.error("Error fetching homepage data:", error);
+        // Fallback or empty arrays
+    }
 
     return (
         <>
