@@ -17,11 +17,23 @@ export async function GET() {
     try {
         await connectDB();
 
-        // Check if already seeded
-        const existingAdmin = await Admin.findOne({});
-        if (existingAdmin) {
-            return NextResponse.json({ message: 'Database already seeded', status: 'exists' }, { status: 200 });
-        }
+        // Check if already seeded - REMOVED check to allow re-seeding/update
+        // const existingAdmin = await Admin.findOne({});
+        // if (existingAdmin) {
+        //     return NextResponse.json({ message: 'Database already seeded', status: 'exists' }, { status: 200 });
+        // }
+
+        // Clear existing data to ensure clean state with new content
+        await Promise.all([
+            Admin.deleteMany({}),
+            Settings.deleteMany({}),
+            TeamMember.deleteMany({}),
+            Advisor.deleteMany({}),
+            Partner.deleteMany({}),
+            Initiative.deleteMany({}),
+            ImpactStat.deleteMany({}),
+            DonationOption.deleteMany({}),
+        ]);
 
         // Create admin user
         const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'admin123', 12);
