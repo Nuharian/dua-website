@@ -1,29 +1,27 @@
-import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
-import connectDB from '@/lib/mongodb';
-import Admin from '@/models/Admin';
-import Settings from '@/models/Settings';
-import TeamMember from '@/models/TeamMember';
-import Advisor from '@/models/Advisor';
-import Partner from '@/models/Partner';
-import Initiative from '@/models/Initiative';
-import ImpactStat from '@/models/ImpactStat';
-import DonationOption from '@/models/DonationOption';
+import mongoose from 'mongoose';
+import Admin from '../src/models/Admin';
+import Settings from '../src/models/Settings';
+import TeamMember from '../src/models/TeamMember';
+import Advisor from '../src/models/Advisor';
+import Partner from '../src/models/Partner';
+import Initiative from '../src/models/Initiative';
+import ImpactStat from '../src/models/ImpactStat';
+import DonationOption from '../src/models/DonationOption';
 
-export const dynamic = 'force-dynamic';
+const MONGODB_URI = process.env.MONGODB_URI;
 
-// GET handler for easy browser seeding
-export async function GET() {
+if (!MONGODB_URI) {
+    throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
+}
+
+async function seed() {
     try {
-        await connectDB();
+        console.log('Connecting to MongoDB...');
+        await mongoose.connect(MONGODB_URI as string);
+        console.log('Connected!');
 
-        // Check if already seeded - REMOVED check to allow re-seeding/update
-        // const existingAdmin = await Admin.findOne({});
-        // if (existingAdmin) {
-        //     return NextResponse.json({ message: 'Database already seeded', status: 'exists' }, { status: 200 });
-        // }
-
-        // Clear existing data to ensure clean state with new content
+        console.log('Clearing existing data...');
         await Promise.all([
             Admin.deleteMany({}),
             Settings.deleteMany({}),
@@ -34,8 +32,9 @@ export async function GET() {
             ImpactStat.deleteMany({}),
             DonationOption.deleteMany({}),
         ]);
+        console.log('Data cleared.');
 
-        // Create admin user
+        console.log('Seeding Admin...');
         const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'admin123', 12);
         await Admin.create({
             email: process.env.ADMIN_EMAIL || 'admin@duabd.org',
@@ -44,13 +43,13 @@ export async function GET() {
             role: 'super_admin',
         });
 
-        // Create initial settings
+        console.log('Seeding Settings...');
         await Settings.create({
             siteName: 'Development and Unity Alliance',
             tagline: 'Delivering Happiness',
             motto: 'Delivering Happiness, Through healthcare, education, and communal welfare initiatives across rural Bangladesh.',
             aboutIntro: 'Development and Unity Alliance is a non-profit organisation dedicated to delivering happiness and improving lives through comprehensive Healthcare, quality Education, and sustainable Communal welfare programs across Bangladesh.',
-            welcomeMessage: `We welcome you to Development and Unity Alliance (DUA), an organization that has been founded on the values of compassion, dignity, and empowerment. We are a community-driven and nonprofit initiative that envisions a brighter future for all, especially for the underserved communities of Bangladesh. 
+            welcomeMessage: `We welcome you to Development and Unity Alliance (DUA), an organization that has been founded on the values of compassion, dignity, and empowerment. We are a community-driven and nonprofit initiative that envisions a brighter future for all, especially for the underserved communities of Bangladesh.
 We work in various fields ranging from healthcare and education to climate action and inclusivity. Our mission is simple yet profound: to deliver happiness where it’s needed most.`,
             mission: `"Where Compassion Meets Action"
 To provide comprehensive healthcare, quality education, and social welfare services that uplift communities and deliver happiness to those in need.`,
@@ -76,7 +75,7 @@ To build a society where every individual has access to quality healthcare, educ
             },
         });
 
-        // Create team members
+        console.log('Seeding Team Members...');
         const teamMembers = [
             { name: 'Md Shofikul Islam', role: 'Founder', organization: 'BRAC University', email: 'mdshofikulislam042@gmail.com', type: 'founder', order: 1 },
             { name: 'Farhin Ahmed', role: 'Co-Founder', organization: 'University of Melbourne', email: 'farhinahmed13@gmail.com', type: 'co_founder', order: 2 },
@@ -89,7 +88,7 @@ To build a society where every individual has access to quality healthcare, educ
         ];
         await TeamMember.insertMany(teamMembers);
 
-        // Create advisors
+        console.log('Seeding Advisors...');
         const advisors = [
             { name: 'Dr. Monir Hossain', title: 'MBBS', credentials: 'Assistant Professor', organization: 'Shahabuddin Medical College and Hospital', order: 1 },
             { name: 'Mohammad Rafiqul Islam', title: 'PhD', credentials: 'Assistant Professor', organization: 'BRAC Institute of Languages, BRAC University', order: 2 },
@@ -97,7 +96,7 @@ To build a society where every individual has access to quality healthcare, educ
         ];
         await Advisor.insertMany(advisors);
 
-        // Create partners (Kept existing ones as they match context)
+        console.log('Seeding Partners...');
         const partners = [
             { name: 'Insaf Barakah Foundation', location: 'Dhaka, Bangladesh', order: 1 },
             { name: 'Insaf Barakah Kidney and General Hospital', location: 'Dhaka', order: 2 },
@@ -107,7 +106,7 @@ To build a society where every individual has access to quality healthcare, educ
         ];
         await Partner.insertMany(partners);
 
-        // Create initiatives
+        console.log('Seeding Initiatives...');
         const initiatives = [
             { title: 'DUA Healthcamp', slug: 'dua-healthcamp', description: 'Free health camps providing medical care to underserved communities', category: 'healthcare', status: 'ongoing', isHighlighted: true, order: 1 },
             { title: 'Climate First by DUA', slug: 'climate-first', description: 'Environmental initiatives for climate action', category: 'environment', status: 'ongoing', isHighlighted: true, order: 2 },
@@ -122,7 +121,7 @@ To build a society where every individual has access to quality healthcare, educ
         ];
         await Initiative.insertMany(initiatives);
 
-        // Create impact stats
+        console.log('Seeding Impact Stats...');
         const impactStats = [
             { label: 'Health Camps Conducted', value: '27+', description: '15000+ health beneficiaries', icon: 'health', order: 1 },
             { label: 'Meals Served', value: '7000+', description: 'Nutritious meals for communities', icon: 'food', order: 2 },
@@ -132,7 +131,7 @@ To build a society where every individual has access to quality healthcare, educ
         ];
         await ImpactStat.insertMany(impactStats);
 
-        // Create donation options
+        console.log('Seeding Donation Options...');
         const donationOptions = [
             { type: 'bkash', name: 'bKash', accountNumber: '01XXXXXXXXX', instructions: 'Send money to our bKash number', order: 1 },
             { type: 'nagad', name: 'Nagad', accountNumber: '01XXXXXXXXX', instructions: 'Send money to our Nagad number', order: 2 },
@@ -141,21 +140,13 @@ To build a society where every individual has access to quality healthcare, educ
         ];
         await DonationOption.insertMany(donationOptions);
 
-        return NextResponse.json({
-            message: 'Database seeded successfully!',
-            data: {
-                admin: 1,
-                teamMembers: teamMembers.length,
-                advisors: advisors.length,
-                partners: partners.length,
-                initiatives: initiatives.length,
-                impactStats: impactStats.length,
-                donationOptions: donationOptions.length,
-            }
-        }, { status: 201 });
+        console.log('Database seeded successfully!');
+        process.exit(0);
 
     } catch (error) {
         console.error('Seed error:', error);
-        return NextResponse.json({ error: 'Failed to seed database', details: String(error) }, { status: 500 });
+        process.exit(1);
     }
 }
+
+seed();
